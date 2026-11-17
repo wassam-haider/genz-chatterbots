@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Two-Bot Dialogue Simulator</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-warm: #F4F1EA;
+      --chat-bg: #EFEAE2;
+      --card-bg: #FFFFFF;
+      --text-main: #1C1E21;
+      --text-muted: #65676B;
+      --bot-a-bubble: #FFFFFF;
+      --bot-a-accent: #5B45FF;
+      --bot-b-bubble: #D9FDD3;
+      --bot-b-accent: #0F8259;
+      --system-pill-bg: #E1DDD5;
+      --border-color: #E2DDD5;
+      --primary: #128C7E;
+      --primary-hover: #075E54;
+      --danger-bg: #FEECEB;
+      --danger-text: #B42318;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background-color: var(--bg-warm);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px;
+    }
+
+    .app-wrapper {
+      width: 100%;
+      max-width: 820px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* Header */
+    header {
+      text-align: center;
+      padding: 8px 0;
+    }
+
+    header h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: #2D3139;
+      letter-spacing: -0.02em;
+    }
+
+    header p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* Control Panel */
+    .control-panel {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 16px 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: flex-end;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group.grow {
+      flex: 1 1 300px;
+    }
+
+    .form-group.turns {
+      flex: 0 0 110px;
+    }
+
+    label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+    }
+
+    input[type="text"],
+    input[type="number"] {
+      height: 42px;
+      padding: 8px 14px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      border: 1.5px solid var(--border-color);
+      border-radius: 8px;
+      background: #FAFAFA;
+      color: var(--text-main);
+      outline: none;
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    input[type="text"]:focus,
+    input[type="number"]:focus {
+      border-color: var(--primary);
+      background: #FFFFFF;
+      box-shadow: 0 0 0 3px rgba(18, 140, 126, 0.15);
+    }
+
+    .btn-start {
+      height: 42px;
+      padding: 0 22px;
+      background: var(--primary);
+      color: #FFFFFF;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.15s ease, transform 0.1s ease;
+    }
+
+    .btn-start:hover:not(:disabled) {
+      background: var(--primary-hover);
+    }
+
+    .btn-start:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    .btn-start:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* Alert Box */
+    .alert-banner {
+      display: none;
+      background: var(--danger-bg);
+      border: 1px solid #FECDCA;
+      color: var(--danger-text);
+      padding: 12px 16px;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      line-height: 1.4;
+    }
+
+    /* Chat Container */
+    .chat-card {
+      background: var(--chat-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+      display: flex;
+      flex-direction: column;
+      height: 580px;
+    }
+
+    .chat-top-bar {
+      background: #FFFFFF;
+      border-bottom: 1px solid var(--border-color);
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .bots-meta {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .bot-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .dot.bot-a {
+      background: var(--bot-a-accent);
+    }
+
+    .dot.bot-b {
+      background: var(--bot-b-accent);
+    }
+
+    .chat-status {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .messages-area {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      scroll-behavior: smooth;
+    }
+
+    /* Message Bubbles */
+    .message-row {
+      display: flex;
+      flex-direction: column;
+      max-width: 78%;
+      animation: fadeIn 0.25s ease-out;
+    }
+
+    .message-row.bot-a {
+      align-self: flex-start;
+    }
+
+    .message-row.bot-b {
+      align-self: flex-end;
+    }
+
+    .sender-label {
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-bottom: 3px;
+      padding: 0 4px;
+    }
+
+    .message-row.bot-a .sender-label {
+      color: var(--bot-a-accent);
+    }
+
+    .message-row.bot-b .sender-label {
+      color: var(--bot-b-accent);
+      text-align: right;
+    }
+
+    .bubble {
+      padding: 10px 14px;
+      font-size: 0.94rem;
+      line-height: 1.45;
+      word-break: break-word;
+      position: relative;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+    }
+
+    .message-row.bot-a .bubble {
+      background: var(--bot-a-bubble);
+      color: var(--text-main);
+      border-radius: 4px 14px 14px 14px;
+      border: 1px solid rgba(0,0,0,0.03);
+    }
+
+    .message-row.bot-b .bubble {
+      background: var(--bot-b-bubble);
+      color: #0E2E16;
+      border-radius: 14px 4px 14px 14px;
+    }
+
+    .message-time {
+      font-size: 0.68rem;
+      color: #8C8C8C;
+      float: right;
+      margin-left: 12px;
+      margin-top: 5px;
+    }
+
+    /* Seed pill */
+    .seed-pill {
+      align-self: center;
+      background: #FFFFFF;
+      border: 1px solid var(--border-color);
+      color: #4A4D53;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      text-align: center;
+      max-width: 90%;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+      margin-bottom: 4px;
+    }
+
+    /* System Notice */
+    .system-pill {
+      align-self: center;
+      background: var(--system-pill-bg);
+      color: #44474E;
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-align: center;
+      margin: 8px 0;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+      animation: fadeIn 0.3s ease-in;
+    }
+
+    /* Typing Indicator */
+    .typing-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 10px 14px;
+    }
+
+    .typing-dot {
+      width: 6px;
+      height: 6px;
+      background-color: #8E9297;
+      border-radius: 50%;
+      animation: bounce 1.2s infinite ease-in-out;
+    }
+
+    .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+    .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes bounce {
+      0%, 80%, 100% { transform: translateY(0); }
+      40% { transform: translateY(-6px); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .empty-state {
+      margin: auto;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.92rem;
+      max-width: 340px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-wrapper">
+    <header>
+      <h1>Two-Bot Chat Simulator</h1>
+      <p>Sequential ChatterBot dialogue simulator trained on unified_corpus.csv</p>
+    </header>
+
+    <div class="control-panel">
+      <div class="form-group grow">
+        <label for="seedInput">Seed Prompt / Starting Message</label>
+        <input
+          id="seedInput"
+          type="text"
+          value="Got the job today, big W!"
+          placeholder="Type an opening statement or phrase..."
+        />
+      </div>
+
+      <div class="form-group turns">
+        <label for="turnsInput">Max Turns</label>
+        <input
+          id="turnsInput"
+          type="number"
+          min="1"
+          max="20"
+          value="10"
+        />
+      </div>
+
+      <button id="btnStart" class="btn-start" onclick="startConversation()">
+        <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+          <path d="M3 2v12l10-6L3 2z"/>
+        </svg>
+        <span>Start Chat</span>
+      </button>
+    </div>
+
+    <div id="errorBanner" class="alert-banner"></div>
+
+    <div class="chat-card">
+      <div class="chat-top-bar">
+        <div class="bots-meta">
+          <div class="bot-pill">
+            <span class="dot bot-a"></span>
+            <span>Bot A</span>
+          </div>
+          <div class="bot-pill">
+            <span class="dot bot-b"></span>
+            <span>Bot B</span>
+          </div>
+        </div>
+        <div id="chatStatus" class="chat-status">Ready</div>
+      </div>
+
+      <div id="messagesArea" class="messages-area">
+        <div id="emptyPlaceholder" class="empty-state">
+          Enter a seed prompt and click <strong>Start Chat</strong> to observe Bot A and Bot B converse.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = "http://127.0.0.1:8000";
+    const messagesArea = document.getElementById("messagesArea");
+    const emptyPlaceholder = document.getElementById("emptyPlaceholder");
+    const btnStart = document.getElementById("btnStart");
+    const chatStatus = document.getElementById("chatStatus");
+    const errorBanner = document.getElementById("errorBanner");
+    const seedInput = document.getElementById("seedInput");
+    const turnsInput = document.getElementById("turnsInput");
+
+    function getTimestamp() {
+      const now = new Date();
+      return now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function scrollToBottom() {
+      messagesArea.scrollTop = messagesArea.scrollHeight;
+    }
+
+    function showError(msg) {
+      errorBanner.textContent = msg;
+      errorBanner.style.display = "block";
+    }
+
+    function clearError() {
+      errorBanner.textContent = "";
+      errorBanner.style.display = "none";
+    }
+
+    function createTypingBubble(sender) {
+      const isBotA = sender === "Bot A";
+      const row = document.createElement("div");
+      row.className = `message-row ${isBotA ? "bot-a" : "bot-b"}`;
+      row.id = "activeTypingRow";
+
+      const label = document.createElement("div");
+      label.className = "sender-label";
+      label.textContent = `${sender} is typing...`;
+
+      const bubble = document.createElement("div");
+      bubble.className = "bubble typing-indicator";
+      bubble.innerHTML = `
+        <span class="typing-dot"></span>
+        <span class="typing-dot"></span>
+        <span class="typing-dot"></span>
+      `;
+
+      row.appendChild(label);
+      row.appendChild(bubble);
+      return row;
+    }
+
+    function appendMessageBubble(sender, text) {
+      const isBotA = sender === "Bot A";
+      const row = document.createElement("div");
+      row.className = `message-row ${isBotA ? "bot-a" : "bot-b"}`;
+
+      const label = document.createElement("div");
+      label.className = "sender-label";
+      label.textContent = sender;
+
+      const bubble = document.createElement("div");
+      bubble.className = "bubble";
+
+      const textSpan = document.createElement("span");
+      textSpan.textContent = text;
+
+      const timeSpan = document.createElement("span");
+      timeSpan.className = "message-time";
+      timeSpan.textContent = getTimestamp();
+
+      bubble.appendChild(textSpan);
+      bubble.appendChild(timeSpan);
+
+      row.appendChild(label);
+      row.appendChild(bubble);
+      messagesArea.appendChild(row);
+      scrollToBottom();
+    }
+
+    function appendSystemPill(text) {
+      const pill = document.createElement("div");
+      pill.className = "system-pill";
+      pill.textContent = text;
+      messagesArea.appendChild(pill);
+      scrollToBottom();
+    }
+
+    function appendSeedPill(seed) {
+      const pill = document.createElement("div");
+      pill.className = "seed-pill";
+      pill.textContent = `Seed: "${seed}"`;
+      messagesArea.appendChild(pill);
+      scrollToBottom();
+    }
+
+    const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+    async function startConversation() {
+      clearError();
+      const seed = seedInput.value.trim();
+      const maxTurns = parseInt(turnsInput.value, 10) || 10;
+
+      if (!seed) {
+        showError("Please enter a seed message.");
+        return;
+      }
+
+      btnStart.disabled = true;
+      chatStatus.textContent = "Connecting to backend...";
+
+      // Clear previous messages
+      messagesArea.innerHTML = "";
+      appendSeedPill(seed);
+
+      let data;
+      try {
+        const response = await fetch(`${API_BASE}/converse`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ seed: seed, max_turns: maxTurns }),
+        });
+
+        if (!response.ok) {
+          const errDetail = await response.json().catch(() => ({ detail: response.statusText }));
+          throw new Error(errDetail.detail || `Server returned error ${response.status}`);
+        }
+
+        data = await response.json();
+      } catch (err) {
+        showError(
+          `Unable to reach backend server at ${API_BASE}. Please ensure serve_chatterbot.py is running. (${err.message})`
+        );
+        chatStatus.textContent = "Disconnected";
+        btnStart.disabled = false;
+        return;
+      }
+
+      chatStatus.textContent = "Simulating conversation...";
+
+      // Render turns one by one with a typing indicator
+      for (let i = 0; i < data.turns.length; i++) {
+        const turn = data.turns[i];
+
+        // 1. Show typing bubble
+        const typingRow = createTypingBubble(turn.sender);
+        messagesArea.appendChild(typingRow);
+        scrollToBottom();
+
+        // 2. Typing delay (650ms - 900ms)
+        await sleep(750);
+
+        // 3. Remove typing bubble
+        if (typingRow.parentNode) {
+          typingRow.remove();
+        }
+
+        // 4. Render actual message
+        appendMessageBubble(turn.sender, turn.text);
+
+        // Brief breather before next bot begins typing
+        await sleep(350);
+      }
+
+      // Render system stop reason
+      let stopNotice = "Conversation ended";
+      if (data.stop_reason === "repetition_detected") {
+        stopNotice = "Conversation ended — repetition detected";
+      } else if (data.stop_reason === "max_turns_reached") {
+        stopNotice = `Conversation ended — reached turn limit (${data.total_turns} turns)`;
+      }
+      appendSystemPill(stopNotice);
+
+      chatStatus.textContent = "Completed";
+      btnStart.disabled = false;
+    }
+  </script>
+</body>
+</html>
